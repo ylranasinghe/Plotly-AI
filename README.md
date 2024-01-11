@@ -188,6 +188,160 @@ fig.update_traces(
 fig.show()
 ```
 ## 3) ROC and PR Curves
+Interpret the results of your classification using Receiver Operating Characteristics (ROC) and Precision-Recall (PR) Curves in Python with Plotly.
+
+Basic binary ROC curve
+```Python
+import plotly.express as px
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_curve, auc
+from sklearn.datasets import make_classification
+
+X, y = make_classification(n_samples=500, random_state=0)
+
+model = LogisticRegression()
+model.fit(X, y)
+y_score = model.predict_proba(X)[:, 1]
+
+fpr, tpr, thresholds = roc_curve(y, y_score)
+
+fig = px.area(
+    x=fpr, y=tpr,
+    title=f'ROC Curve (AUC={auc(fpr, tpr):.4f})',
+    labels=dict(x='False Positive Rate', y='True Positive Rate'),
+    width=700, height=500
+)
+fig.add_shape(
+    type='line', line=dict(dash='dash'),
+    x0=0, x1=1, y0=0, y1=1
+)
+
+fig.update_yaxes(scaleanchor="x", scaleratio=1)
+fig.update_xaxes(constrain='domain')
+fig.show()
+```
+
+We also display the area under the ROC curve (ROC AUC), which is fairly high, thus consistent with our interpretation of the previous plots. 
+```Python
+from dash import Dash, dcc, html, Input, Output
+from sklearn.model_selection import train_test_split
+from sklearn import linear_model, tree, neighbors
+from sklearn import metrics, datasets
+import plotly.express as px
+
+app = Dash(__name__)
+
+MODELS = {'Logistic Regression': linear_model.LogisticRegression,
+          'Decision Tree': tree.DecisionTreeClassifier,
+          'k-NN': neighbors.KNeighborsClassifier}
+
+app.layout = html.Div([
+    html.H4("Analysis of the ML model's results using ROC and PR curves"),
+    html.P("Select model:"),
+    dcc.Dropdown(
+        id='dropdown',
+        options=["Logistic Regression", "Decision Tree", "k-NN"],
+        value='Logistic Regression',
+        clearable=False
+    ),
+    dcc.Graph(id="graph"),
+])
+
+
+@app.callback(
+    Output("graph", "figure"), 
+    Input('dropdown', "value"))
+def train_and_display(model_name):
+    X, y = datasets.make_classification( # replace with your own data source
+        n_samples=1500, random_state=0)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, random_state=42)
+
+    model = MODELS[model_name]()
+    model.fit(X_train, y_train)
+
+    y_score = model.predict_proba(X_test)[:, 1]
+
+    fpr, tpr, thresholds = metrics.roc_curve(y_test, y_score)
+    score = metrics.auc(fpr, tpr)
+
+    fig = px.area(
+        x=fpr, y=tpr,
+        title=f'ROC Curve (AUC={score:.4f})',
+        labels=dict(
+            x='False Positive Rate', 
+            y='True Positive Rate'))
+    fig.add_shape(
+        type='line', line=dict(dash='dash'),
+        x0=0, x1=1, y0=0, y1=1)
+
+    return fig
+
+
+app.run_server(debug=True)
+```
+
+### ROC curve in Dash
+Dash is the best way to build analytical apps in Python using Plotly figures. To run the app below, run pip install dash, click "Download" to get the code and run python app.py.
+
+```Python
+from dash import Dash, dcc, html, Input, Output
+from sklearn.model_selection import train_test_split
+from sklearn import linear_model, tree, neighbors
+from sklearn import metrics, datasets
+import plotly.express as px
+
+app = Dash(__name__)
+
+MODELS = {'Logistic Regression': linear_model.LogisticRegression,
+          'Decision Tree': tree.DecisionTreeClassifier,
+          'k-NN': neighbors.KNeighborsClassifier}
+
+app.layout = html.Div([
+    html.H4("Analysis of the ML model's results using ROC and PR curves"),
+    html.P("Select model:"),
+    dcc.Dropdown(
+        id='dropdown',
+        options=["Logistic Regression", "Decision Tree", "k-NN"],
+        value='Logistic Regression',
+        clearable=False
+    ),
+    dcc.Graph(id="graph"),
+])
+
+
+@app.callback(
+    Output("graph", "figure"), 
+    Input('dropdown', "value"))
+def train_and_display(model_name):
+    X, y = datasets.make_classification( # replace with your own data source
+        n_samples=1500, random_state=0)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, random_state=42)
+
+    model = MODELS[model_name]()
+    model.fit(X_train, y_train)
+
+    y_score = model.predict_proba(X_test)[:, 1]
+
+    fpr, tpr, thresholds = metrics.roc_curve(y_test, y_score)
+    score = metrics.auc(fpr, tpr)
+
+    fig = px.area(
+        x=fpr, y=tpr,
+        title=f'ROC Curve (AUC={score:.4f})',
+        labels=dict(
+            x='False Positive Rate', 
+            y='True Positive Rate'))
+    fig.add_shape(
+        type='line', line=dict(dash='dash'),
+        x0=0, x1=1, y0=0, y1=1)
+
+    return fig
+
+
+app.run_server(debug=True)
+```
 ## 4) PCA Visualization
 ## 5) AI/ML APps with Dash
 ## 6) t-SNE and UMAP Projections
